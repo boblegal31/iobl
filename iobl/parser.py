@@ -54,7 +54,7 @@ light_command = {
     '38':'dim_stop',
     }
 
-shutter_command = {
+automation_command = {
     #"""shutter command identification."""
     '0':'move_stop',
     '1':'move_up',
@@ -146,7 +146,7 @@ def decode_packet(packet: str) -> dict:
         if who == device_type_name.get('light'):
             data['what'] = light_command.get(what)
         elif who == device_type_name.get('automation'):
-            data['what'] = shutter_command.get(what)
+            data['what'] = automation_command.get(what)
         elif who == device_type_name.get('scenario'):
             data['what'] = scenario_command.get(command)
         elif who == device_type_name.get('configuration'):
@@ -232,8 +232,8 @@ def encode_packet(packet: dict) -> str:
             light_command_name = {v: k for k, v in light_command.items()}
             encoded_packet = '*' + device_type_name.get(packet.get('who')) + '*' + light_command_name.get(packet.get('what')) + '*'+ where + '##'
         elif packet.get('who') == 'automation':
-            shutter_command_name = {v: k for k, v in shutter_command.items()}
-            encoded_packet = '*' + device_type_name.get(packet.get('who')) + '*' + shutter_command_name.get(packet.get('what')) + '*'+ where + '##'
+            automation_command_name = {v: k for k, v in automation_command.items()}
+            encoded_packet = '*' + device_type_name.get(packet.get('who')) + '*' + automation_command_name.get(packet.get('what')) + '*'+ where + '##'
         elif packet.get('who') == 'thermoregulation':
             thermoregulation_command_name = {v: k for k, v in thermoregulation_command.items()}
             encoded_packet = '*' + device_type_name.get(packet.get('who')) + '*' + thermoregulation_command_name.get(packet.get('what')) + '*'+ where + '##'
