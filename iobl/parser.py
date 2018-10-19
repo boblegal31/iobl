@@ -217,13 +217,13 @@ def encode_packet(packet: dict) -> str:
         device_type_name = {v: k for k, v in devicetype.items()}
     
         if packet.get('mode') == 'unicast' or packet.get('mode') == 'multicast':
-            if packet.get('media') == 'cpl':
+            if packet.get('media') == 'plc':
                 where = '#' + str(where)
             else:
                 where = '#' + str(where) + '#' + communication_media_name.get(packet.get('media'))
     
         elif packet.get('mode') == 'broadcast':
-            if packet.get('media') == 'cpl':
+            if packet.get('media') == 'plc':
                 where = communication_mode.get('broadcast') + '#' + where
             else:
                 where = communication_mode.get('broadcast') + '#' + where + '#' + communication_media_name.get(packet.get('media'))
