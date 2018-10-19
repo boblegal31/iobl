@@ -68,10 +68,10 @@ Move up or down a shutter device:
 
 .. code-block:: bash
 
-    $ iobl who=shutter what=move_up legrand_id=123456 unit=1
-    $ iobl who=shutter what=move_down legrand_id=123456 unit=1
+    $ iobl who=automation what=move_up legrand_id=123456 unit=1
+    $ iobl who=automation what=move_down legrand_id=123456 unit=1
 
-Use of TCP mode instead of serial port (eg: ESP8266 serial bridge):
+Use of TCP mode instead of serial port:
 
 .. code-block:: bash
 
