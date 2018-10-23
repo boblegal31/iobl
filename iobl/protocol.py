@@ -1,6 +1,5 @@
 """Asyncio protocol implementation of IOBL."""
 import asyncio
-import concurrent
 import logging
 from datetime import timedelta
 from functools import partial
@@ -9,9 +8,10 @@ from typing import Callable, List
 from serial_asyncio import create_serial_connection
 
 from .parser import (
+    valid_packet,
     decode_packet,
-    encode_packet,
-    valid_packet
+    encode_bus_command,
+    encode_set_dimension
 )
 
 log = logging.getLogger(__name__)
@@ -116,9 +116,13 @@ class PacketHandling(ProtocolBase):
         else:
             print('packet', packet)
 
-    def send_packet(self, fields):
-        """Concat fields and send packet to gateway."""
-        self.send_raw_packet(encode_packet(fields))
+    def send_bus_command(self, fields):
+        """Concat fields and send bus_command packet to gateway."""
+        self.send_raw_packet(encode_bus_command(fields))
+
+    def send_set_dimension(self, fields):
+        """Concat fields and send set_dimension packet to gateway."""
+        self.send_raw_packet(encode_set_dimension(fields))
 
 
 class EventHandling(PacketHandling):
@@ -140,7 +144,6 @@ class EventHandling(PacketHandling):
 
     def _handle_packet(self, packet):
         """Event specific packet handling logic."""
-
         if self.ignore_event(packet['type'], packet['legrand_id']):
             log.debug('ignoring packet with type/id: %s', packet)
             return
@@ -169,20 +172,26 @@ class EventHandling(PacketHandling):
         """
         for ignore in self.ignore:
             if (ignore == pkt_type or
-                    (ignore.endswith('*') and legrand_id.startswith(ignore[:-1]))):
+                    (ignore.endswith('*') and
+                     legrand_id.startswith(ignore[:-1]))):
                 return True
         return False
 
-    def send_packet(self, fields):
-        super().send_packet(fields)
+#    def send_bus_command(self, fields):
+#        super().send_bus_command(fields)
+#
+#    def send_set_dimension(self, fields):
+#        super().send_set_dimension(fields)
+
 
 class IoblProtocol(EventHandling):
     """Combine preferred abstractions that form complete IOBL interface."""
 
 
-def create_iobl_connection(port=None, host=None, baud=115200, protocol=IoblProtocol,
-                             packet_callback=None, event_callback=None,
-                             disconnect_callback=None, ignore=None, loop=None):
+def create_iobl_connection(port=None, host=None, baud=115200,
+                           protocol=IoblProtocol, packet_callback=None,
+                           event_callback=None, disconnect_callback=None,
+                           ignore=None, loop=None):
     """Create IOBL manager class, returns transport coroutine."""
     # use default protocol if not specified
     protocol = partial(

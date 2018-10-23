@@ -34,26 +34,27 @@ Usage
 
         Usage:
           iobl [-v | -vv] [options]
-          iobl [-v | -vv] [options] <who=> <what=> <legrand_id=> <unit=> [<comm_mode=> <comm_media=>]
+          iobl [-v | -vv] [options] [commands [optionnal command args]]
           iobl (-h | --help)
           iobl --version
 
         Options:
-          -p --port=<port>   Serial port to connect to [default: /dev/ttyACM0],
-                               or TCP port in TCP mode.
-          --baud=<baud>      Serial baud rate [default: 115200].
-          --host=<host>      TCP mode, connect to host instead of serial port.
-          -m=<handling>      How to handle incoming packets [default: event].
-          -h --help          Show this screen.
-          -v                 Increase verbosity
-          --version          Show version.
-
-    <who=> must be completed with the class of device to control. For the moment, only AUTOMATION (shutter command) and SCENARIO classes have been tested so far.
-    <what=> must be completed with the action requested. For AUTOMATION class, the action is either move_up, move_down or move_stop.
-    <legrand_id=> must be completed with the "legrand_id" of the device to control. The legrand_id is usually indicated on the back of the device.
-    <unit=> must be completedunit number in the device to control. Ususally, for an AUTOMATION class device, unit shall be 2.
-    <comm_mode=> may be completed with the communication mode to use : unicast, multicast or broadcast. Defaults to unicast.
-    <comm_media=> may be completed with the communication media to use : PLC, IR, RF. Only PLC has been tested so far. Defaults to PLC.
+          -p --port=<port>       Serial port to connect to [default: /dev/ttyACM0],
+                                   or TCP port in TCP mode.
+          --baud=<baud>          Serial baud rate [default: 115200].
+          --host=<host>          TCP mode, connect to host instead of serial port.
+          -m=<handling>          How to handle incoming packets [default: command].
+          -h --help              Show this screen.
+          -v                     Increase verbosity
+          --version              Show version.
+        Commands:
+          -w --who=<who>         Device class to send command to.
+          -W --what=<what>       Command type to send to device.
+          -l --legrand_id=<id>   Legrand id of the device to send command to.
+          -u --unit=<unit>       Sub unit in the device to send command to.
+        Optionnal command args:
+          -m --comm_mode=<mode>  Communication mode to use (unicast, multicast, broadcst,...).
+          -M --comm_media=<media>  Communication media to use (plc, ir,...).
 
 Intercept and display IOBL packets:
 
@@ -68,8 +69,8 @@ Move up or down a shutter device:
 
 .. code-block:: bash
 
-    $ iobl who=automation what=move_up legrand_id=123456 unit=1
-    $ iobl who=automation what=move_down legrand_id=123456 unit=1
+    $ iobl --who=automation --what=move_up --legrand_id=123456 --unit=2
+    $ iobl --who=automation --what=move_down --legrand_id=123456 --unit=2
 
 Use of TCP mode instead of serial port:
 

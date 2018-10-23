@@ -21,7 +21,7 @@ Commands:
   -l --legrand_id=<id>   Legrand id of the device to send command to.
   -u --unit=<unit>       Sub unit in the device to send command to.
 Optionnal command args:
-  -m --comm_mode=<mode>  Communication mode to use (unicast, multicast, broadcst,...).
+  -m --comm_mode=<mode>  Communication mode to use (unicast, multicast,...).
   -M --comm_media=<media>  Communication media to use (plc, ir,...).
 
 """
@@ -30,10 +30,9 @@ import asyncio
 import logging
 import sys
 
+from typing import Any, Dict, cast
 import pkg_resources
 from docopt import docopt
-from collections import defaultdict
-from typing import Any, Callable, Dict, Generator, cast
 
 from .protocol import (
     EventHandling,
@@ -48,8 +47,11 @@ PROTOCOLS = {
     'print': PacketHandling,
 }
 
+
 def print_callback(packet):
-    print (packet)
+    """Print received & decoded packets."""
+    print(packet)
+
 
 def main(argv=sys.argv[1:], loop=None):
     """Parse argument and setup main program loop."""
@@ -91,8 +93,8 @@ def main(argv=sys.argv[1:], loop=None):
                 args['--comm_media'] = 'plc'
             data = cast(Dict[str, Any], {
                 'type': 'command',
-                'legrand_id' : args['--legrand_id'],
-                'who' : args['--who'],
+                'legrand_id': args['--legrand_id'],
+                'who': args['--who'],
                 'mode': args['--comm_mode'],
                 'media': args['--comm_media'],
                 'unit': args['--unit'],
@@ -100,7 +102,7 @@ def main(argv=sys.argv[1:], loop=None):
             })
 
             loop.run_until_complete(
-                protocol.send_packet(data))
+                protocol.send_bus_command(data))
         else:
             loop.run_forever()
     except KeyboardInterrupt:
