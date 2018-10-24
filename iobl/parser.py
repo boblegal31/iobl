@@ -180,7 +180,7 @@ def decode_packet(packet: str) -> dict:
 
         data['legrand_id'], data['unit'], data['mode'], data['media'] = parse_legrand_id(str(where))
 
-        data['type'] = 'command'
+        data['type'] = 'bus_command'
         data['command'] = ''
 
     elif bool(ack_nack_re.match(packet)):
@@ -331,10 +331,10 @@ def encode_set_dimension(packet_fields: dict) -> str:
 
     if packet_fields.get('who') == 'light':
         light_dimension_name = {v: k for k, v in light_dimension.items()}
-        encoded_packet = '*#' + device_type_name.get(packet_fields.get('who')) + '*' + where + '*' + light_dimension_name.get(packet_fields.get('dimension')) + pkt_values
+        encoded_packet = '*#' + device_type_name.get(packet_fields.get('who')) + '*' + where + '*' + light_dimension_name.get(packet_fields.get('dimension')) + pkt_values + '##'
     elif packet_fields.get('who') == 'configuration':
         configuration_dimension_name = {v: k for k, v in configuration_dimension.items()}
-        encoded_packet = '*#' + device_type_name.get(packet_fields.get('who')) + '*' + where + '*' + configuration_dimension_name.get(packet_fields.get('dimension')) + pkt_values
+        encoded_packet = '*#' + device_type_name.get(packet_fields.get('who')) + '*' + where + '*' + configuration_dimension_name.get(packet_fields.get('dimension')) + pkt_values + '##'
     return encoded_packet
 
 
