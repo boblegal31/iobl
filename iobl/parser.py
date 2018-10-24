@@ -280,84 +280,88 @@ def get_id_unit(idstr: str):
     return (legrand_id, unit)
 
 
-def encode_bus_command(packet: dict) -> str:
+def encode_packet(packet_fields: dict) -> str:
+    """Call the encoding method according packet type."""
+    if packet_fields.get('type') == 'bus_command':
+        return encode_bus_command(packet_fields)
+    elif packet_fields.get('type') == 'set_dimension':
+        return encode_set_dimension(packet_fields)
+    else:
+        return ''
+
+
+def encode_bus_command(packet_fields: dict) -> str:
     """Encode the input fields into an IOBL bus_command packet."""
-    if packet.get('type') == 'command':
-        where = encode_id_unit(packet.get('legrand_id'), packet.get('unit'))
+    where = encode_where(packet_fields.get('legrand_id'), packet_fields.get('unit'),
+                         packet_fields.get('mode'), packet_fields.get('media'))
 
-        communication_media_name = {v: k for k, v in communication_media.items()}
-        device_type_name = {v: k for k, v in devicetype.items()}
+    device_type_name = {v: k for k, v in devicetype.items()}
 
-        if packet.get('mode') == 'unicast' or packet.get('mode') == 'multicast':
-            if packet.get('media') == 'plc':
-                where = '#' + str(where)
-            else:
-                where = '#' + str(where) + '#' + communication_media_name.get(packet.get('media'))
+    if packet_fields.get('who') == 'light':
+        light_command_name = {v: k for k, v in light_command.items()}
+        encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + light_command_name.get(packet_fields.get('what')) + '*' + where + '##'
+    elif packet_fields.get('who') == 'automation':
+        automation_command_name = {v: k for k, v in automation_command.items()}
+        encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + automation_command_name.get(packet_fields.get('what')) + '*' + where + '##'
+    elif packet_fields.get('who') == 'thermoregulation':
+        thermoregulation_command_name = {v: k for k, v in thermoregulation_command.items()}
+        encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + thermoregulation_command_name.get(packet_fields.get('what')) + '*' + where + '##'
+    elif packet_fields.get('who') == 'doorentry':
+        door_entry_command_name = {v: k for k, v in door_entry_command.items()}
+        encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + door_entry_command_name.get(packet_fields.get('what')) + '*' + where + '##'
+    elif packet_fields.get('who') == 'scenario':
+        scenario_command_name = {v: k for k, v in scenario_command.items()}
+        encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + scenario_command_name.get(packet_fields.get('what')) + '*' + where + '##'
+    elif packet_fields.get('who') == 'configuration':
+        configuration_command_name = {v: k for k, v in configuration_command.items()}
+        encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + configuration_command_name.get(packet_fields.get('what')) + '*' + where + '##'
 
-        elif packet.get('mode') == 'broadcast':
-            if packet.get('media') == 'plc':
-                where = communication_mode.get('broadcast') + '#' + where
-            else:
-                where = communication_mode.get('broadcast') + '#' + where + '#' + communication_media_name.get(packet.get('media'))
+    return encoded_packet
 
+
+def encode_set_dimension(packet_fields: dict) -> str:
+    """Encode the input fields into an IOBL set_dimension/dimension_request packet."""
+    where = encode_where(packet_fields.get('legrand_id'), packet_fields.get('unit'),
+                         packet_fields.get('mode'), packet_fields.get('media'))
+    pkt_values = ''
+    for value in packet_fields.get('values'):
+        pkt_values = pkt_values + '*' + value
+
+    device_type_name = {v: k for k, v in devicetype.items()}
+
+    if packet_fields.get('who') == 'light':
+        light_dimension_name = {v: k for k, v in light_dimension.items()}
+        encoded_packet = '*#' + device_type_name.get(packet_fields.get('who')) + '*' + where + '*' + light_dimension_name.get(packet_fields.get('dimension')) + pkt_values
+    elif packet_fields.get('who') == 'configuration':
+        configuration_dimension_name = {v: k for k, v in configuration_dimension.items()}
+        encoded_packet = '*#' + device_type_name.get(packet_fields.get('who')) + '*' + where + '*' + configuration_dimension_name.get(packet_fields.get('dimension')) + pkt_values
+    return encoded_packet
+
+
+def encode_where(legrandid: str, unit: str, com_mode: str, com_media: str) -> str:
+    """Encode the where clause of IOBL packet."""
+    where = encode_id_unit(legrandid, unit)
+
+    communication_media_name = {v: k for k, v in communication_media.items()}
+    communication_mode_name = {v: k for k, v in communication_mode.items()}
+
+    if com_mode == 'unicast' or com_mode == 'multicast':
+        if com_media == 'plc':
+            where = str(where)
         else:
-            where = '#' + str(where)
+            where = str(where) + '#' + communication_media_name.get(com_media)
 
-        if packet.get('who') == 'light':
-            light_command_name = {v: k for k, v in light_command.items()}
-            encoded_packet = '*' + device_type_name.get(packet.get('who')) + '*' + light_command_name.get(packet.get('what')) + '*' + where + '##'
-        elif packet.get('who') == 'automation':
-            automation_command_name = {v: k for k, v in automation_command.items()}
-            encoded_packet = '*' + device_type_name.get(packet.get('who')) + '*' + automation_command_name.get(packet.get('what')) + '*' + where + '##'
-        elif packet.get('who') == 'thermoregulation':
-            thermoregulation_command_name = {v: k for k, v in thermoregulation_command.items()}
-            encoded_packet = '*' + device_type_name.get(packet.get('who')) + '*' + thermoregulation_command_name.get(packet.get('what')) + '*' + where + '##'
-        elif packet.get('who') == 'doorentry':
-            door_entry_command_name = {v: k for k, v in door_entry_command.items()}
-            encoded_packet = '*' + device_type_name.get(packet.get('who')) + '*' + door_entry_command_name.get(packet.get('what')) + '*' + where + '##'
-        elif packet.get('who') == 'scenario':
-            scenario_command_name = {v: k for k, v in scenario_command.items()}
-            encoded_packet = '*' + device_type_name.get(packet.get('who')) + '*' + scenario_command_name.get(packet.get('what')) + '*' + where + '##'
-        elif packet.get('who') == 'configuration':
-            configuration_command_name = {v: k for k, v in configuration_command.items()}
-            encoded_packet = '*' + device_type_name.get(packet.get('who')) + '*' + configuration_command_name.get(packet.get('what')) + '*' + where + '##'
-
-        return encoded_packet
-    else:
-        return ''
-
-
-def encode_set_dimension(packet: dict) -> str:
-    """Encode the input fields into an IOBL set_dimension packet."""
-    if packet.get('type') == 'set_dimension':
-        where = encode_id_unit(packet.get('legrand_id'), packet.get('unit'))
-
-        communication_media_name = {v: k for k, v in communication_media.items()}
-        device_type_name = {v: k for k, v in devicetype.items()}
-
-        if packet.get('mode') == 'unicast' or packet.get('mode') == 'multicast':
-            if packet.get('media') == 'plc':
-                where = '#' + str(where)
-            else:
-                where = '#' + str(where) + '#' + communication_media_name.get(packet.get('media'))
-
-        elif packet.get('mode') == 'broadcast':
-            if packet.get('media') == 'plc':
-                where = communication_mode.get('broadcast') + '#' + where
-            else:
-                where = communication_mode.get('broadcast') + '#' + where + '#' + communication_media_name.get(packet.get('media'))
-
+    elif com_mode == 'broadcast':
+        # When in broadcast mode, the legrand_id provided shall be the source address
+        if com_media == 'plc':
+            where = communication_mode_name.get('broadcast') + '#' + str(where)
         else:
-            where = '#' + str(where)
+            where = communication_mode_name.get('broadcast') + '#' + str(where) + '#' + communication_media_name.get(com_media)
 
-        pkt_values = ''
-        for value in packet.get('values'):
-            pkt_values = pkt_values + '*' + value
-
-        encoded_packet = '*#' + device_type_name.get(packet.get('who')) + '*' + where + '*' + packet.get('dimension') + pkt_values
-        return encoded_packet
     else:
-        return ''
+        where = '#' + str(where)
+
+    return where
 
 
 def encode_id_unit(legrandid: str, unit: str) -> str:

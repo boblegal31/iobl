@@ -43,7 +43,6 @@ Usage
                                    or TCP port in TCP mode.
           --baud=<baud>          Serial baud rate [default: 115200].
           --host=<host>          TCP mode, connect to host instead of serial port.
-          -m=<handling>          How to handle incoming packets [default: command].
           -h --help              Show this screen.
           -v                     Increase verbosity
           --version              Show version.
@@ -53,7 +52,9 @@ Usage
           -l --legrand_id=<id>   Legrand id of the device to send command to.
           -u --unit=<unit>       Sub unit in the device to send command to.
         Optionnal command args:
-          -m --comm_mode=<mode>  Communication mode to use (unicast, multicast, broadcst,...).
+          -d --dimension         Send a dimension_set/request command (bus_command otherwise)
+          --val=<values>         Values for dimension set command, comma separated list
+          -m --comm_mode=<mode>  Communication mode to use (unicast, multicast,...).
           -M --comm_media=<media>  Communication media to use (plc, ir,...).
 
 Intercept and display IOBL packets:
@@ -71,6 +72,18 @@ Move up or down a shutter device:
 
     $ iobl --who=automation --what=move_up --legrand_id=123456 --unit=2
     $ iobl --who=automation --what=move_down --legrand_id=123456 --unit=2
+
+Send a dimension_request packet for requesting DEVICE_DESCRIPTION:
+
+.. code-block:: bash
+
+    $ iobl --who=configuration --what=device_description_request --legrand_id=123456 --unit=2 -d
+
+Send a set_dimension packet for setting the DIM Level:
+
+.. code-block:: bash
+
+    $ iobl --who=light --what=go_to_level_time --legrand_id=123456 --unit=2 -d --val=11
 
 Use of TCP mode instead of serial port:
 

@@ -10,8 +10,7 @@ from serial_asyncio import create_serial_connection
 from .parser import (
     valid_packet,
     decode_packet,
-    encode_bus_command,
-    encode_set_dimension
+    encode_packet
 )
 
 log = logging.getLogger(__name__)
@@ -116,13 +115,10 @@ class PacketHandling(ProtocolBase):
         else:
             print('packet', packet)
 
-    def send_bus_command(self, fields):
+    @asyncio.coroutine
+    def send_packet(self, fields):
         """Concat fields and send bus_command packet to gateway."""
-        self.send_raw_packet(encode_bus_command(fields))
-
-    def send_set_dimension(self, fields):
-        """Concat fields and send set_dimension packet to gateway."""
-        self.send_raw_packet(encode_set_dimension(fields))
+        self.send_raw_packet(encode_packet(fields))
 
 
 class EventHandling(PacketHandling):
@@ -176,12 +172,6 @@ class EventHandling(PacketHandling):
                      legrand_id.startswith(ignore[:-1]))):
                 return True
         return False
-
-#    def send_bus_command(self, fields):
-#        super().send_bus_command(fields)
-#
-#    def send_set_dimension(self, fields):
-#        super().send_set_dimension(fields)
 
 
 class IoblProtocol(EventHandling):
