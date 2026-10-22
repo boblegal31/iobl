@@ -7,6 +7,7 @@ from typing import Callable, List
 
 from serial_asyncio import create_serial_connection
 
+from .asyncio_utils import get_or_create_event_loop
 from .parser import (
     valid_packet,
     decode_packet,
@@ -25,10 +26,7 @@ class ProtocolBase(asyncio.Protocol):
 
     def __init__(self, loop=None, disconnect_callback=None) -> None:
         """Initialize class."""
-        if loop:
-            self.loop = loop
-        else:
-            self.loop = asyncio.get_event_loop()
+        self.loop = get_or_create_event_loop(loop)
         self.packet = ''
         self.buffer = ''
         self.disconnect_callback = disconnect_callback
@@ -115,7 +113,6 @@ class PacketHandling(ProtocolBase):
         else:
             print('packet', packet)
 
-    @asyncio.coroutine
     def send_packet(self, fields):
         """Concat fields and send bus_command packet to gateway."""
         self.send_raw_packet(encode_packet(fields))
@@ -183,15 +180,19 @@ def create_iobl_connection(port=None, host=None, baud=115200,
                            event_callback=None, disconnect_callback=None,
                            ignore=None, loop=None):
     """Create IOBL manager class, returns transport coroutine."""
+    loop = get_or_create_event_loop(loop)
+
     # use default protocol if not specified
     protocol = partial(
         protocol,
-        loop=loop if loop else asyncio.get_event_loop(),
+        loop=loop,
         packet_callback=packet_callback,
         event_callback=event_callback,
         disconnect_callback=disconnect_callback,
         ignore=ignore if ignore else [],
     )
+
+    conn: Coroutine[Any, Any, tuple[asyncio.Transport, asyncio.Protocol]]
 
     # setup serial connection if no transport specified
     if host:

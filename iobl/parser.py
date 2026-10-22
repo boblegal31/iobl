@@ -2,7 +2,7 @@
 
 import re
 from enum import Enum
-from typing import Any, Dict, cast
+#from typing import Any, Dict, cast
 
 UNKNOWN = 'unknown'
 
@@ -38,7 +38,6 @@ where_decode_re = re.compile(WHERE_DEFINITION)
 what_decode_re = re.compile(WHAT_DEFINITION)
 dimension_decode_re = re.compile(DIMENSION_DEFINITION)
 val_decode_re = re.compile(VAL_DEFINITION)
-
 
 class iobl_packet(Enum):
     """Open Packet definition."""
@@ -158,9 +157,9 @@ def decode_packet(packet: str) -> dict:
     if bool(bus_command_re.match(packet)):
         who, what, where = bus_command_re.match(packet).group(1, 2, 3)
 
-        data = cast(Dict[str, Any], {
+        data = {
             'who': devicetype.get(who),
-        })
+        }
 
         device_type_name = {v: k for k, v in devicetype.items()}
         command = what_decode_re.match(what).group(1)
@@ -186,32 +185,32 @@ def decode_packet(packet: str) -> dict:
     elif bool(ack_nack_re.match(packet)):
 
         if ack_nack_re.match(packet).group(1) == '0':
-            data = cast(Dict[str, Any], {
+            data = {
                 'type': 'nack',
                 'legrand_id': '',
-            })
+            }
         else:
-            data = cast(Dict[str, Any], {
+            data = {
                 'type': 'ack',
                 'legrand_id': '',
-            })
+            }
 
     elif bool(status_request_re.match(packet)):
 
         who, where = status_request_re.match(packet).group(1, 2)
-        data = cast(Dict[str, Any], {
+        data = {
             'type': 'status_request',
             'who': devicetype.get(who),
-        })
+        }
         data['legrand_id'], data['unit'], data['mode'], data['media'] = parse_legrand_id(str(where))
 
     elif bool(dimension_req_re.match(packet)):
 
         who, where, dimension = dimension_req_re.match(packet).group(1, 2, 3)
-        data = cast(Dict[str, Any], {
+        data = {
             'type': 'dimension_request',
             'who': devicetype.get(who),
-        })
+        }
         data['legrand_id'], data['unit'], data['mode'], data['media'] = parse_legrand_id(str(where))
 
         data['dimension'], data['val'] = parse_dimension(dimension)
@@ -219,10 +218,10 @@ def decode_packet(packet: str) -> dict:
     elif bool(dimension_set_re.match(packet)):
 
         who, where = dimension_set_re.match(packet).group(1, 2)
-        data = cast(Dict[str, Any], {
+        data = {
             'type': 'dimension_set',
             'who': devicetype.get(who),
-        })
+        }
         data['legrand_id'], data['unit'], data['mode'], data['media'] = parse_legrand_id(str(where))
 
     return data
@@ -280,61 +279,61 @@ def get_id_unit(idstr: str):
     return (legrand_id, unit)
 
 
-def encode_packet(packet_fields: dict) -> str:
+def encode_packet(packet_fields) -> str:
     """Call the encoding method according packet type."""
-    if packet_fields.get('type') == 'bus_command':
+    if packet_fields["type"] == 'bus_command':
         return encode_bus_command(packet_fields)
-    elif packet_fields.get('type') == 'set_dimension':
+    elif packet_fields['type'] == 'set_dimension':
         return encode_set_dimension(packet_fields)
     else:
         return ''
 
 
-def encode_bus_command(packet_fields: dict) -> str:
+def encode_bus_command(packet_fields) -> str:
     """Encode the input fields into an IOBL bus_command packet."""
     where = encode_where(packet_fields.get('legrand_id'), packet_fields.get('unit'),
                          packet_fields.get('mode'), packet_fields.get('media'))
 
     device_type_name = {v: k for k, v in devicetype.items()}
 
-    if packet_fields.get('who') == 'light':
+    if packet_fields['who'] == 'light':
         light_command_name = {v: k for k, v in light_command.items()}
         encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + light_command_name.get(packet_fields.get('what')) + '*' + where + '##'
-    elif packet_fields.get('who') == 'automation':
+    elif packet_fields['who'] == 'automation':
         automation_command_name = {v: k for k, v in automation_command.items()}
         encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + automation_command_name.get(packet_fields.get('what')) + '*' + where + '##'
-    elif packet_fields.get('who') == 'thermoregulation':
+    elif packet_fields['who'] == 'thermoregulation':
         thermoregulation_command_name = {v: k for k, v in thermoregulation_command.items()}
         encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + thermoregulation_command_name.get(packet_fields.get('what')) + '*' + where + '##'
-    elif packet_fields.get('who') == 'doorentry':
+    elif packet_fields['who'] == 'doorentry':
         door_entry_command_name = {v: k for k, v in door_entry_command.items()}
         encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + door_entry_command_name.get(packet_fields.get('what')) + '*' + where + '##'
-    elif packet_fields.get('who') == 'scenario':
+    elif packet_fields['who'] == 'scenario':
         scenario_command_name = {v: k for k, v in scenario_command.items()}
         encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + scenario_command_name.get(packet_fields.get('what')) + '*' + where + '##'
-    elif packet_fields.get('who') == 'configuration':
+    elif packet_fields['who'] == 'configuration':
         configuration_command_name = {v: k for k, v in configuration_command.items()}
         encoded_packet = '*' + device_type_name.get(packet_fields.get('who')) + '*' + configuration_command_name.get(packet_fields.get('what')) + '*' + where + '##'
 
     return encoded_packet
 
 
-def encode_set_dimension(packet_fields: dict) -> str:
+def encode_set_dimension(packet_fields) -> str:
     """Encode the input fields into an IOBL set_dimension/dimension_request packet."""
-    where = encode_where(packet_fields.get('legrand_id'), packet_fields.get('unit'),
-                         packet_fields.get('mode'), packet_fields.get('media'))
+    where = encode_where(packet_fields['legrand_id'], packet_fields['unit'],
+                         packet_fields['mode'], packet_fields['media'])
     pkt_values = ''
-    for value in packet_fields.get('values'):
+    for value in packet_fields['values']:
         pkt_values = pkt_values + '*' + value
 
     device_type_name = {v: k for k, v in devicetype.items()}
 
-    if packet_fields.get('who') == 'light':
+    if packet_fields['who'] == 'light':
         light_dimension_name = {v: k for k, v in light_dimension.items()}
-        encoded_packet = '*#' + device_type_name.get(packet_fields.get('who')) + '*' + where + '*' + light_dimension_name.get(packet_fields.get('dimension')) + pkt_values + '##'
+        encoded_packet = '*#' + device_type_name[packet_fields['who']] + '*' + where + '*' + light_dimension_name[packet_fields['dimension']] + pkt_values + '##'
     elif packet_fields.get('who') == 'configuration':
         configuration_dimension_name = {v: k for k, v in configuration_dimension.items()}
-        encoded_packet = '*#' + device_type_name.get(packet_fields.get('who')) + '*' + where + '*' + configuration_dimension_name.get(packet_fields.get('dimension')) + pkt_values + '##'
+        encoded_packet = '*#' + device_type_name[packet_fields['who']] + '*' + where + '*' + configuration_dimension_name[packet_fields['dimension']] + pkt_values + '##'
     return encoded_packet
 
 
@@ -349,14 +348,14 @@ def encode_where(legrandid: str, unit: str, com_mode: str, com_media: str) -> st
         if com_media == 'plc':
             where = str(where)
         else:
-            where = str(where) + '#' + communication_media_name.get(com_media)
+            where = str(where) + '#' + communication_media_name[com_media]
 
     elif com_mode == 'broadcast':
         # When in broadcast mode, the legrand_id provided shall be the source address
         if com_media == 'plc':
-            where = communication_mode_name.get('broadcast') + '#' + str(where)
+            where = communication_mode_name['broadcast'] + '#' + str(where)
         else:
-            where = communication_mode_name.get('broadcast') + '#' + str(where) + '#' + communication_media_name.get(com_media)
+            where = communication_mode_name['broadcast'] + '#' + str(where) + '#' + communication_media_name[com_media]
 
     else:
         where = '#' + str(where)

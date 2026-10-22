@@ -31,10 +31,11 @@ import asyncio
 import logging
 import sys
 
-from typing import Any, Dict, cast
-import pkg_resources
+from importlib.metadata import version
+from typing import Optional, Sequence, Type  # noqa: unused-import
 from docopt import docopt
 
+from .asyncio_utils import get_or_create_event_loop
 from .protocol import (
     EventHandling,
     PacketHandling,
@@ -54,10 +55,9 @@ def print_callback(packet):
     print(packet)
 
 
-def main(argv=sys.argv[1:], loop=None):
+def main(argv=sys.argv[1:], loop: Optional[asyncio.AbstractEventLoop] = None):
     """Parse argument and setup main program loop."""
-    args = docopt(__doc__, argv=argv,
-                  version=pkg_resources.require('iobl')[0].version)
+    args = docopt(__doc__, argv=argv, version=version("iobl"))
 
     level = logging.ERROR
     if args['-v']:
@@ -66,8 +66,7 @@ def main(argv=sys.argv[1:], loop=None):
         level = logging.DEBUG
     logging.basicConfig(level=level)
 
-    if not loop:
-        loop = asyncio.get_event_loop()
+    loop = get_or_create_event_loop()
 
     protocol = PROTOCOLS['command']
 
@@ -91,7 +90,7 @@ def main(argv=sys.argv[1:], loop=None):
                 args['--comm_media'] = 'plc'
 
             if args['--dimension']:
-                data = cast(Dict[str, Any], {
+                data = {
                     'type': 'set_dimension',
                     'legrand_id': args['--legrand_id'],
                     'who': args['--who'],
@@ -99,7 +98,7 @@ def main(argv=sys.argv[1:], loop=None):
                     'media': args['--comm_media'],
                     'unit': args['--unit'],
                     'dimension': args['--what'],
-                })
+                }
                 val = list()
                 for value in args['--val'].split(','):
                     val.append(value)
@@ -107,7 +106,7 @@ def main(argv=sys.argv[1:], loop=None):
                 data['values'] = val
 
             else:
-                data = cast(Dict[str, Any], {
+                data = {
                     'type': 'bus_command',
                     'legrand_id': args['--legrand_id'],
                     'who': args['--who'],
@@ -115,10 +114,9 @@ def main(argv=sys.argv[1:], loop=None):
                     'media': args['--comm_media'],
                     'unit': args['--unit'],
                     'what': args['--what'],
-                })
+                }
 
-            loop.run_until_complete(
-                protocol.send_packet(data))
+            protocol.send_packet(data)
         else:
             loop.run_forever()
     except KeyboardInterrupt:
