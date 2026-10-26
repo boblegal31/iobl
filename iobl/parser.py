@@ -18,7 +18,7 @@ BUS_COMMAND = r'^\*(\d+)\*(\d+#?\d*#?\d*#?)\*(\d*#*\d+#*\d*)##$'
 #  *#WHO*WHERE
 STATUS_REQUEST = r'\*#(\d+)\*(\d*#*\d+#*\d*)##$'
 #  *#WHO*WHERE*DIMENSION(*VAL1*VALn)##
-DIMENSION_REQUEST = r'^\*#(\d+)\*(\d*#*\d+#*\d*)\*([\d#\*]+)##$'
+DIMENSION_REQUEST = r'^\*#(\d+)\*(\d*#*\d+#*\d*)\*([\d#]+)\**([\d\*]*)##$'
 #  *#WHO*WHERE*#DIMENSION*VAL1*VALn##
 DIMENSION_SET = r'^\*#(\d+)\*(\d*#*\d+#*\d*)\*(\d*#*\d+#*\d*)##$'
 
@@ -142,6 +142,20 @@ communication_media = {
     '': 'plc',
     }
 
+dimension_command = {
+    "13"  : "ANNOUNCE_ID",
+    "51"  : "DEVICE_DESCRIPTION_REQUEST",
+    "51_" : "DEVICE_DESCRIPTION_STATUS",
+    "13_" : "REQUEST_ID",
+    "53" : "EXTENDED_MEMORY_DATA",
+    "56" : "MEMORY_DEPTH_INDICATION",
+    "52_" : "MEMORY_DATA",
+    "55"  : "UNIT_DESCRIPTION_REQUEST",
+    "55_" : "UNIT_DESCRIPTION_STATUS",
+    "#54_" : "MEMORY_WRITE",
+    "#57_" : "SET_COMMUNICATION_PARAMETER"
+    }
+
 
 def valid_packet(packet: str) -> bool:
     """Verify if packet is valid."""
@@ -206,14 +220,14 @@ def decode_packet(packet: str) -> dict:
 
     elif bool(dimension_req_re.match(packet)):
 
-        who, where, dimension = dimension_req_re.match(packet).group(1, 2, 3)
+        who, where, dimension, val = dimension_req_re.match(packet).group(1, 2, 3, 4)
         data = {
             'type': 'dimension_request',
             'who': devicetype.get(who),
         }
         data['legrand_id'], data['unit'], data['mode'], data['media'] = parse_legrand_id(str(where))
 
-        data['dimension'], data['val'] = parse_dimension(dimension)
+        data['dimension'], data['val'] = parse_dimension(dimension, val)
 
     elif bool(dimension_set_re.match(packet)):
 
@@ -247,20 +261,17 @@ def parse_legrand_id(where: str):
     return (legrandid, unit, mode, media)
 
 
-def parse_dimension(dimension: str):
+def parse_dimension(dimension: str, values: str):
     """Extract dimension and vals from dimension token."""
-    decoded_dim, newval, new_dimension = dimension_decode_re.match(dimension).group(1, 2, 3)
+    #decoded_dim, newval, new_dimension = dimension_decode_re.match(dimension).group(1, 2, 3)
+
+    if dimension in dimension_command:
+        decoded_dim = dimension_command[dimension]
+    else:
+        return '', list()
 
     val = list()
-    if newval:
-        val.append(newval)
-
-        while new_dimension:
-            newval, new_dimension = val_decode_re.match(new_dimension).group(1, 2)
-
-            if newval:
-                val.append(newval)
-
+    val.append(values.split('*'))
     return decoded_dim, val
 
 
@@ -281,7 +292,7 @@ def get_id_unit(idstr: str):
 
 def encode_packet(packet_fields) -> str:
     """Call the encoding method according packet type."""
-    if packet_fields["type"] == 'bus_command':
+    if packet_fields["type"] == 'bus_command' or packet_fields["type"] is None:
         return encode_bus_command(packet_fields)
     elif packet_fields['type'] == 'set_dimension':
         return encode_set_dimension(packet_fields)
@@ -291,8 +302,12 @@ def encode_packet(packet_fields) -> str:
 
 def encode_bus_command(packet_fields) -> str:
     """Encode the input fields into an IOBL bus_command packet."""
+    if packet_fields['who'] == 'configuration':
+        mode = 'unicast'
+    else:
+        mode = packet_fields.get('mode')
     where = encode_where(packet_fields.get('legrand_id'), packet_fields.get('unit'),
-                         packet_fields.get('mode'), packet_fields.get('media'))
+                         mode, packet_fields.get('media'))
 
     device_type_name = {v: k for k, v in devicetype.items()}
 
